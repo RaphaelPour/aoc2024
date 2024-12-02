@@ -2,16 +2,46 @@ package main
 
 import (
 	"fmt"
+	"iter"
+	"slices"
 
 	"github.com/RaphaelPour/stellar/input"
 )
 
+func SkipOne[S ~[]T, T any](in S) []S {
+	return slices.Collect(SkipOneSeq(in))
+}
+
+func SkipOneSeq[S ~[]T, T any](in S) iter.Seq[S] {
+	return func(yield func(S) bool) {
+		out := make(S, len(in)-1)
+		for i := 0; i < len(in); i += 1 {
+			copy(out[:i], in[:i])
+			copy(out[i:], in[i+1:])
+			if !yield(out) {
+				return
+			}
+		}
+	}
+}
+
+func SkipOneSeq2[S ~[]T, T any](in S) iter.Seq2[int, S] {
+	return func(yield func(int, S) bool) {
+		out := make(S, len(in)-1)
+		for i := 0; i < len(in); i += 1 {
+			copy(out[:i], in[:i])
+			copy(out[i:], in[i+1:])
+			if !yield(i, out) {
+				return
+			}
+		}
+	}
+}
+
 func isMonotonic(report []int, minDiff, maxDiff int) bool {
 	for i := 0; i < len(report)-1; i += 1 {
 		diff := report[i+1] - report[i]
-		fmt.Println(report[i+1], report[i], diff)
 		if diff < minDiff || diff > maxDiff {
-			fmt.Println("nope")
 			return false
 		}
 	}
@@ -36,14 +66,11 @@ func part2(data [][]int) int {
 			continue
 		}
 
-		line2 := make([]int, len(line)-1)
 		//https://go.dev/play/p/-k4lZnPMSgg
-		for i := 0; i < len(line); i += 1 {
-			copy(line2[i:i+1], line[i:i+1])
-			copy(line2[i+1:], line[i+2:])
+		for line2 := range SkipOneSeq(line) {
 			if isMonotonic(line2, 1, 3) || isMonotonic(line2, -3, -1) {
 				safe += 1
-				continue
+				break
 			}
 		}
 	}
