@@ -6,6 +6,8 @@ github.com/RaphaelPour/stellar v0.0.0-20241202105921-27744e14a607 h1:UUaxEPHb8FP
 github.com/RaphaelPour/stellar v0.0.0-20241202105921-27744e14a607/go.mod h1:B/kCklk13pcRjlrXK0ccMXK2Kvz8dX56BwuyO8gXr7g=
 github.com/RaphaelPour/stellar v0.0.0-20241202115243-f2ffb866d439 h1:derT4zSIBD8wQc6mCXaWLZuShtW/OL4bjf4K8ZX4SsU=
 github.com/RaphaelPour/stellar v0.0.0-20241202115243-f2ffb866d439/go.mod h1:B/kCklk13pcRjlrXK0ccMXK2Kvz8dX56BwuyO8gXr7g=
+github.com/RaphaelPour/stellar v0.0.0-20241203144903-50536fa08a55 h1:tFJ7yk0FyqOQCeAKAZSTY3GluA9F8PHRjghQdAGEuD4=
+github.com/RaphaelPour/stellar v0.0.0-20241203144903-50536fa08a55/go.mod h1:B/kCklk13pcRjlrXK0ccMXK2Kvz8dX56BwuyO8gXr7g=
 github.com/fatih/color v1.18.0 h1:S8gINlzdQ840/4pfAwic/ZE0djQEH3wM94VfqLTZcOM=
 github.com/fatih/color v1.18.0/go.mod h1:4FelSpRwEGDpQ12mAdzqdOukCy4u8WUtOY6lkT/6HfU=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
