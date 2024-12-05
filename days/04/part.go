@@ -6,6 +6,38 @@ import (
 	"github.com/RaphaelPour/stellar/input"
 )
 
+var (
+	horizontal = []Point{
+		Point{0, 0, "X"}, Point{1, 0, "M"}, Point{2, 0, "A"}, Point{3, 0, "S"},
+	}
+	vertical = []Point{
+		Point{0, 0, "X"}, Point{0, 1, "M"}, Point{0, 2, "A"}, Point{0, 3, "S"},
+	}
+	diagonalDesc = []Point{
+		Point{0, 0, "X"}, Point{1, 1, "M"}, Point{2, 2, "A"}, Point{3, 3, "S"},
+	}
+	diagonalAsc = []Point{
+		Point{0, 0, "X"}, Point{1, -1, "M"}, Point{2, -2, "A"}, Point{3, -3, "S"},
+	}
+	horizontalR = []Point{
+		Point{0, 0, "S"}, Point{1, 0, "A"}, Point{2, 0, "M"}, Point{3, 0, "X"},
+	}
+	verticalR = []Point{
+		Point{0, 0, "S"}, Point{0, 1, "A"}, Point{0, 2, "M"}, Point{0, 3, "X"},
+	}
+	diagonalDescR = []Point{
+		Point{0, 0, "S"}, Point{1, 1, "A"}, Point{2, 2, "M"}, Point{3, 3, "X"},
+	}
+	diagonalAscR = []Point{
+		Point{0, 0, "S"}, Point{1, -1, "A"}, Point{2, -2, "M"}, Point{3, -3, "X"},
+	}
+
+	allChecks = [][]Point{
+		horizontal, vertical, diagonalDesc, diagonalAsc,
+		horizontalR, verticalR, diagonalDescR, diagonalAscR,
+	}
+)
+
 type Grid struct {
 	fields [][]string
 	marked [][]int
@@ -78,37 +110,7 @@ func (p Point) Add(x, y int) Point {
 	return p
 }
 
-func (g Grid) Search() int {
-	horizontal := []Point{
-		Point{0, 0, "X"}, Point{1, 0, "M"}, Point{2, 0, "A"}, Point{3, 0, "S"},
-	}
-	vertical := []Point{
-		Point{0, 0, "X"}, Point{0, 1, "M"}, Point{0, 2, "A"}, Point{0, 3, "S"},
-	}
-	diagonalDesc := []Point{
-		Point{0, 0, "X"}, Point{1, 1, "M"}, Point{2, 2, "A"}, Point{3, 3, "S"},
-	}
-	diagonalAsc := []Point{
-		Point{0, 0, "X"}, Point{-1, -1, "M"}, Point{-2, -2, "A"}, Point{-3, -3, "S"},
-	}
-	horizontalR := []Point{
-		Point{0, 0, "S"}, Point{1, 0, "A"}, Point{2, 0, "M"}, Point{3, 0, "X"},
-	}
-	verticalR := []Point{
-		Point{0, 0, "S"}, Point{0, 1, "A"}, Point{0, 2, "M"}, Point{0, 3, "X"},
-	}
-	diagonalDescR := []Point{
-		Point{0, 0, "S"}, Point{1, 1, "A"}, Point{2, 2, "M"}, Point{3, 3, "X"},
-	}
-	diagonalAscR := []Point{
-		Point{0, 0, "S"}, Point{-1, -1, "A"}, Point{-2, -2, "M"}, Point{-3, -3, "X"},
-	}
-
-	checks := [][]Point{
-		horizontal, vertical, diagonalDesc, diagonalAsc,
-		horizontalR, verticalR, diagonalDescR, diagonalAscR,
-	}
-
+func (g Grid) Search(checks [][]Point) int {
 	sum := 0
 	for y, line := range g.fields {
 		for x := range line {
@@ -140,7 +142,7 @@ func (g Grid) Search() int {
 func part1(data []string) int {
 	grid := NewGrid(data)
 
-	result := grid.Search()
+	result := grid.Search(allChecks)
 	fmt.Println(grid.String())
 	return result
 }
@@ -153,10 +155,7 @@ func main() {
 	// data := input.LoadString("input")
 	// data := input.LoadDefaultInt()
 	// data := input.LoadInt("input")
-	data := input.LoadString("input_example")
-
-	fmt.Println("too low: 2445")
-	fmt.Println("too high: 2529")
+	data := input.LoadString("input")
 
 	fmt.Println("== [ PART 1 ] ==")
 	fmt.Println(part1(data))
