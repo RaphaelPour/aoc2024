@@ -2,109 +2,147 @@ package main
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
 
 	"github.com/RaphaelPour/stellar/input"
-	sstrings "github.com/RaphaelPour/stellar/strings"
-)
-
-var (
-	pattern = regexp.MustCompile(`(XMAS|SMAX)`)
-	grid    Grid
 )
 
 type Grid struct {
 	fields [][]string
-	marked map[int]int
+	marked [][]int
 }
 
 func NewGrid(data []string) Grid {
 	g := Grid{}
 	g.fields = make([][]string, len(data))
+	g.marked = make([][]int, len(data))
 	for y, line := range data {
-		g.fields[y] = make([]string, len(line)+1)
+		g.fields[y] = make([]string, len(line))
+		g.marked[y] = make([]int, len(line))
 		for x, ch := range line {
 			g.fields[y][x] = string(ch)
 		}
-		g.fields[y][len(line)] = "_"
 	}
-
-	g.marked = make(map[int]int)
 
 	return g
 }
 
+func (g Grid) Get(p Point) string {
+	if p.x < 0 || p.x >= len(g.fields) {
+		return "#"
+	}
+	if p.y < 0 || p.y >= len(g.fields) {
+		return "#"
+	}
+
+	return g.fields[p.y][p.x]
+}
+
 func (g Grid) String() string {
-	fmt.Println(g.marked)
 	out := ""
+	max := 0
 	for y := 0; y < len(g.fields); y++ {
 		for x := 0; x < len(g.fields); x++ {
-			if count, ok := g.marked[x+(len(g.fields)*y)]; ok {
-				fmt.Println(x, len(g.fields)*y)
-				out += "\033[0;32m" + fmt.Sprintf("\033[0;%dm%s\033[0m ", 31+count, g.fields[y][x])
+			count := g.marked[y][x]
+			if count > 0 {
+				if count > max {
+					max = count
+				}
+				out += fmt.Sprintf("\033[0;%dm%s\033[0m ", 31+count, g.fields[y][x])
 			} else {
-				out += g.fields[y][x] + " "
+				out += fmt.Sprintf("\033[0;2m%s\033[0m ", g.fields[y][x])
 			}
 		}
 		out += "\n"
 	}
+
+	out += "\n"
+	for i := 0; i <= max; i++ {
+		if i == 0 {
+			out += fmt.Sprintf("\033[0;2mno match\033[0m\n")
+			continue
+		}
+		out += fmt.Sprintf("\033[0;%dm%d matches\033[0m\n", 31+i, i)
+	}
+
 	return out
 }
 
-func diag(total string, length int) int {
-	expr1 := fmt.Sprintf(
-		"(X%sM%sA%sS)",
-		strings.Repeat(".", length),
-		strings.Repeat(".", length),
-		strings.Repeat(".", length),
-	)
-	expr2 := fmt.Sprintf(
-		"(S%sA%sM%sX)",
-		strings.Repeat(".", length),
-		strings.Repeat(".", length),
-		strings.Repeat(".", length),
-	)
-	return diag_(total, expr1, length) + diag_(sstrings.Reverse(total), expr2, length)
+type Point struct {
+	x, y int
+	ch   string
 }
-func diag_(total, expr string, length int) int {
-	fmt.Println(expr)
-	patternDiag := regexp.MustCompile(expr)
 
-	index := 1
-	sum := 0
-	for {
-		fmt.Println("rest: ", total[index-1:])
-		match := patternDiag.FindStringIndex(total[index-1:])
-		//fmt.Println(match)
-		if match == nil {
-			break
-		}
+func (p Point) Add(x, y int) Point {
+	p.x += x
+	p.y += y
+	return p
+}
 
-		sum += 1
-		index += match[0] + 1
-
-		i := index - 2
-		grid.marked[i] = grid.marked[i] + 1
-		grid.marked[i+length*1+1] = grid.marked[i+length*1+1] + 1
-		grid.marked[i+length*2+2] = grid.marked[i+length*2+2] + 1
-		grid.marked[i+length*3+3] = grid.marked[i+length*3+3] + 1
-		fmt.Println("match=", match, "index=", index)
+func (g Grid) Search() int {
+	horizontal := []Point{
+		Point{0, 0, "X"}, Point{1, 0, "M"}, Point{2, 0, "A"}, Point{3, 0, "S"},
 	}
-	//fmt.Println(sum)
+	vertical := []Point{
+		Point{0, 0, "X"}, Point{0, 1, "M"}, Point{0, 2, "A"}, Point{0, 3, "S"},
+	}
+	diagonalDesc := []Point{
+		Point{0, 0, "X"}, Point{1, 1, "M"}, Point{2, 2, "A"}, Point{3, 3, "S"},
+	}
+	diagonalAsc := []Point{
+		Point{0, 0, "X"}, Point{-1, -1, "M"}, Point{-2, -2, "A"}, Point{-3, -3, "S"},
+	}
+	horizontalR := []Point{
+		Point{0, 0, "S"}, Point{1, 0, "A"}, Point{2, 0, "M"}, Point{3, 0, "X"},
+	}
+	verticalR := []Point{
+		Point{0, 0, "S"}, Point{0, 1, "A"}, Point{0, 2, "M"}, Point{0, 3, "X"},
+	}
+	diagonalDescR := []Point{
+		Point{0, 0, "S"}, Point{1, 1, "A"}, Point{2, 2, "M"}, Point{3, 3, "X"},
+	}
+	diagonalAscR := []Point{
+		Point{0, 0, "S"}, Point{-1, -1, "A"}, Point{-2, -2, "M"}, Point{-3, -3, "X"},
+	}
+
+	checks := [][]Point{
+		horizontal, vertical, diagonalDesc, diagonalAsc,
+		horizontalR, verticalR, diagonalDescR, diagonalAscR,
+	}
+
+	sum := 0
+	for y, line := range g.fields {
+		for x := range line {
+			//if field == "X" || field == "S" {
+			for _, check := range checks {
+				isMatch := true
+				cache := make([]Point, 0)
+				for _, point := range check {
+					if g.Get(point.Add(x, y)) != point.ch {
+						isMatch = false
+						break
+					}
+					cache = append(cache, point.Add(x, y))
+				}
+				if isMatch {
+					sum += 1
+					for _, p := range cache {
+						g.marked[p.y][p.x] += 1
+					}
+				}
+				//}
+			}
+		}
+	}
+
 	return sum
 }
 
 func part1(data []string) int {
-	grid = NewGrid(data)
-	//g := NewGrid(data)
-	//fmt.Println(g)
-	total := strings.Join(data, " ")
-	fmt.Println(total)
+	grid := NewGrid(data)
 
-	sum := diag(total, 0) + diag(total, len(data)+2) + diag(total, len(data)) + diag(total, len(data)-1)
-
-	return sum
+	result := grid.Search()
+	fmt.Println(grid.String())
+	return result
 }
 
 func part2(data []string) int {
