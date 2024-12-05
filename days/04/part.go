@@ -23,10 +23,11 @@ func NewGrid(data []string) Grid {
 	g := Grid{}
 	g.fields = make([][]string, len(data))
 	for y, line := range data {
-		g.fields[y] = make([]string, len(line))
+		g.fields[y] = make([]string, len(line)+1)
 		for x, ch := range line {
 			g.fields[y][x] = string(ch)
 		}
+		g.fields[y][len(line)] = "_"
 	}
 
 	g.marked = make(map[int]int)
@@ -98,10 +99,10 @@ func part1(data []string) int {
 	grid = NewGrid(data)
 	//g := NewGrid(data)
 	//fmt.Println(g)
-	total := strings.Join(data, "")
+	total := strings.Join(data, " ")
 	fmt.Println(total)
 
-	sum := diag(total, 0) //diag(total, len(data)) + diag(total, len(data)-1) + diag(total, len(data)-2) + diag(total, 0)
+	sum := diag(total, 0) + diag(total, len(data)+2) + diag(total, len(data)) + diag(total, len(data)-1)
 
 	return sum
 }
@@ -114,14 +115,14 @@ func main() {
 	// data := input.LoadString("input")
 	// data := input.LoadDefaultInt()
 	// data := input.LoadInt("input")
-	data := input.LoadString("input_example2")
+	data := input.LoadString("input_example")
 
 	fmt.Println("too low: 2445")
 	fmt.Println("too high: 2529")
 
 	fmt.Println("== [ PART 1 ] ==")
 	fmt.Println(part1(data))
-	fmt.Println(grid.String())
+	//fmt.Println(grid.String())
 
 	// fmt.Println("== [ PART 2 ] ==")
 	// fmt.Println(part2(data))
