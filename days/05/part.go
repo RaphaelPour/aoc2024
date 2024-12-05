@@ -53,6 +53,36 @@ func (r Rule) Validate(n []int) bool {
 	return formerIndex < laterIndex
 }
 
+func (r Rule) Fix(n []int) []int {
+	if r.Validate(n) {
+		return n
+	}
+
+	formerIndex, laterIndex := -1, -1
+
+	for i, num := range n {
+		if num == r.former {
+			formerIndex = i
+		}
+		if num == r.later {
+			laterIndex = i
+		}
+	}
+
+	if formerIndex == -1 {
+		return n
+	}
+	if laterIndex == -1 {
+		return n
+	}
+
+	if formerIndex > laterIndex {
+		n[formerIndex], n[laterIndex] = n[laterIndex], n[formerIndex]
+	}
+
+	return n
+}
+
 func Parse(s []string) ([][]int, []Rule, error) {
 	rules := make([]Rule, 0)
 	for ; len(s) > 0 && s[0] != ""; s = s[1:] {
@@ -85,9 +115,6 @@ func part1(data []string) int {
 		return 0
 	}
 
-	fmt.Println("Pageslist:", pagesList)
-	fmt.Println("Rules:", rules)
-
 	sum := 0
 	for _, pages := range pagesList {
 		valid := true
@@ -106,18 +133,46 @@ func part1(data []string) int {
 }
 
 func part2(data []string) int {
-	return 0
+	pagesList, rules, err := Parse(data)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+
+	sum := 0
+	for i, _ := range pagesList {
+		for _, rule := range rules {
+			for !valid {
+				if !rule.Validate(pagesList[i]) {
+					pagesList[i] = rule.Fix(pagesList[i])
+				}
+			}
+
+			// check that all rules are satisfied
+			for _, rule := range rules {
+				if !rule.Validate(pagesList[i]) {
+					fmt.Println("%v is not valid... this is bad...\n", pagesList[i])
+					return 0
+				}
+			}
+		}
+
+		middle := len(pagesList[i]) / 2
+		fmt.Println(pagesList[i], "valid, add", pagesList[i][middle])
+		sum += pagesList[i][middle]
+	}
+	return sum
 }
 
 func main() {
 	// data := input.LoadString("input")
 	// data := input.LoadDefaultInt()
 	// data := input.LoadInt("input")
-	data := input.LoadString("input")
+	data := input.LoadString("input_example")
 
 	fmt.Println("== [ PART 1 ] ==")
 	fmt.Println(part1(data))
 
-	// fmt.Println("== [ PART 2 ] ==")
-	// fmt.Println(part2(data))
+	fmt.Println("== [ PART 2 ] ==")
+	fmt.Println(part2(data))
 }
