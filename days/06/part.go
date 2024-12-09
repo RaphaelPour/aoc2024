@@ -72,9 +72,18 @@ func (p Point) NoOrientation() Point {
 	return p
 }
 
+func (p Point) Equal(other Point) bool {
+	return p.x == other.x && p.y == other.y
+}
+
+func (p Point) Identical(other Point) bool {
+	return p.orientation == other.orientation && p.Equal(other)
+}
+
 type Grid struct {
 	fields  [][]FieldType
 	guard   Point
+	initial Point
 	visited map[Point]int
 }
 
@@ -105,6 +114,7 @@ func NewGrid(input []string) (Grid, error) {
 			case '^':
 				g.fields[y][x] = EMPTY
 				g.guard = Point{x, y, 0}
+				g.initial = g.guard
 				fmt.Println(x, y)
 			default:
 				return Grid{}, fmt.Errorf("lol %s", ch)
@@ -135,18 +145,40 @@ func (g Grid) NextField() FieldType {
 }
 
 func (g *Grid) Run() (int, error) {
-
 	fmt.Println("Orientation: ", g.guard.orientation)
 	for !g.IsOOB(g.guard) {
-		g.visited[g.guard.NoOrientation()] = g.visited[g.guard.NoOrientation()] + 1
 		if g.NextField() == OBSTACLE {
 			g.guard = g.guard.RotateRight()
 		} else {
+			g.visited[g.guard.NoOrientation()] = g.visited[g.guard.NoOrientation()] + 1
 			g.guard = g.guard.Next()
 		}
 	}
 
 	return len(g.visited), nil
+}
+
+func (g Grid) RunLoop() (int, error) {
+	loop := 0
+	for p := range g.visited {
+		// store point with orientation, if it gets visited twice, it'll loop
+		visited := make(map[Point]struct{})
+		guard := g.initial
+		for !g.IsOOB(guard) {
+			if _, GOTCHA111 := visited[guard]; GOTCHA111 {
+				loop += 1
+				break
+			}
+			next := guard.Next()
+			if (p.Equal(next)) || (!g.IsOOB(next) && g.fields[next.y][next.x] == OBSTACLE) {
+				guard = guard.RotateRight()
+			} else {
+				visited[guard] = struct{}{}
+				guard = guard.Next()
+			}
+		}
+	}
+	return loop, nil
 }
 
 func (g Grid) String() string {
@@ -190,18 +222,26 @@ func part1(data []string) int {
 }
 
 func part2(data []string) int {
-	return 0
+	g, err := NewGrid(data)
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+	fmt.Println(g)
+	defer fmt.Println(g)
+	hack.NachMirDieSintflut(g.Run())
+	return hack.Yolo(g.RunLoop())
 }
 
 func main() {
 	// data := input.LoadString("input")
 	// data := input.LoadDefaultInt()
 	// data := input.LoadInt("input")
-	data := input.LoadString("input_example")
+	data := input.LoadString("input")
 
 	fmt.Println("== [ PART 1 ] ==")
 	fmt.Println(part1(data))
 
-	// fmt.Println("== [ PART 2 ] ==")
-	// fmt.Println(part2(data))
+	fmt.Println("== [ PART 2 ] ==")
+	fmt.Println(part2(data))
 }
