@@ -57,7 +57,7 @@ func Eval(input string, expressions map[string]Expr) bool {
 	}
 }
 
-func part1(data []string) int {
+func Parse(data []string) (map[string]Expr, []string) {
 	var i int
 	expressions := make(map[string]Expr)
 
@@ -69,7 +69,7 @@ func part1(data []string) int {
 		parts := strings.Split(line, ": ")
 		if len(parts) != 2 {
 			fmt.Printf("error parsing line %q\n", line)
-			return -1
+			return nil, nil
 		}
 		expressions[parts[0]] = Expr{
 			Kind:  CONST,
@@ -84,7 +84,7 @@ func part1(data []string) int {
 		parts := strings.Fields(line)
 		if len(parts) != 5 {
 			fmt.Printf("errpr parsing line %q\n", line)
-			return -1
+			return nil, nil
 		}
 
 		if strings.HasPrefix(parts[4], "z") {
@@ -102,6 +102,11 @@ func part1(data []string) int {
 
 	sort.Strings(outputs)
 
+	return expressions, outputs
+}
+
+func part1(data []string) int {
+	expressions, outputs := Parse(data)
 	var result int
 	// iter through all output nodes and resolve them recursively
 	for i, node := range outputs {
@@ -111,7 +116,27 @@ func part1(data []string) int {
 	return result
 }
 
+func Number(prefix string, expressions map[string]Expr) int {
+	keys := make([]string, 0)
+	for key := range expressions {
+		if strings.HasPrefix(key, prefix) {
+			keys = append(keys, key)
+		}
+	}
+
+	sort.Strings(keys)
+
+	var result int
+	for i, key := range keys {
+		result |= hack.Wormhole(expressions[key].Value) << i
+	}
+	return result
+}
+
 func part2(data []string) int {
+	expressions, _ := Parse(data)
+	expected := Number("x", expressions) + Number("y", expressions)
+	fmt.Println("expected:", expected)
 	return 0
 }
 
@@ -124,6 +149,6 @@ func main() {
 	fmt.Println("== [ PART 1 ] ==")
 	fmt.Println(part1(data))
 
-	// fmt.Println("== [ PART 2 ] ==")
-	// fmt.Println(part2(data))
+	fmt.Println("== [ PART 2 ] ==")
+	fmt.Println(part2(data))
 }
