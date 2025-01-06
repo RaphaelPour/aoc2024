@@ -2,70 +2,65 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
-	hack "github.com/RaphaelPour/stellar/hack"
+	"github.com/RaphaelPour/stellar/hack"
 	"github.com/RaphaelPour/stellar/input"
-	sstrings "github.com/RaphaelPour/stellar/strings"
 )
 
-var (
-	operations = map[string]Op{
-		"AND": And,
-		"OR":  Or,
-		"XOR": Xor,
-	}
+type ExprKind int
 
-	terms = make(map[string]Term)
+const (
+	CONST ExprKind = iota
+	AND
+	OR
+	XOR
 )
 
-type Op func(a, b string) int
-
-func And(a, b string) int {
-	return hack.Wormhole(terms[a].Op(
-		terms[a].A,
-		terms[a].B,
-	) == 1 && terms[b].Op(
-		terms[b].A,
-		terms[b].B,
-	) == 1)
-}
-
-func Or(a, b string) int {
-	return hack.Wormhole(terms[a].Op(
-		terms[a].A,
-		terms[a].B,
-	) == 1 || terms[b].Op(
-		terms[b].A,
-		terms[b].B,
-	) == 1)
-}
-
-func Xor(a, b string) int {
-	return hack.Wormhole(terms[a].Op(
-		terms[a].A,
-		terms[a].B,
-	) != terms[b].Op(
-		terms[b].A,
-		terms[b].B,
-	))
-}
-
-func Input(a int) Op {
-	return func(_, _ string) int {
-		return a
+func Str2Kind(s string) ExprKind {
+	switch s {
+	case "AND":
+		return AND
+	case "OR":
+		return OR
+	case "XOR":
+		return XOR
+	default:
+		panic(fmt.Sprintf("unknown expression kind %q", s))
 	}
 }
 
-type Term struct {
-	name string
-	A, B string
-	Op   Op
+type Expr struct {
+	InputA, InputB string
+	Value          bool
+	Kind           ExprKind
+}
+
+func Eval(input string, expressions map[string]Expr) bool {
+	node, ok := expressions[input]
+	if !ok {
+		panic(fmt.Sprintf("node %q not found in expression map", input))
+	}
+
+	switch node.Kind {
+	case CONST:
+		return node.Value
+	case AND:
+		return Eval(node.InputA, expressions) && Eval(node.InputB, expressions)
+	case OR:
+		return Eval(node.InputA, expressions) || Eval(node.InputB, expressions)
+	case XOR:
+		return Eval(node.InputA, expressions) != Eval(node.InputB, expressions)
+	default:
+		panic(fmt.Sprintf("unknown expression kind %q", node.Kind))
+	}
 }
 
 func part1(data []string) int {
 	var i int
-	terms := make(map[string]Term)
+	expressions := make(map[string]Expr)
+
 	for _, line := range data {
 		if line == "" {
 			break
@@ -76,16 +71,15 @@ func part1(data []string) int {
 			fmt.Printf("error parsing line %q\n", line)
 			return -1
 		}
-
-		terms[parts[0]] = Term{
-			name: parts[0],
-			Op:   Input(sstrings.ToInt(parts[1])),
+		expressions[parts[0]] = Expr{
+			Kind:  CONST,
+			Value: parts[1] == "1",
 		}
 		i += 1
 	}
 	data = data[i+1:]
 
-	goals := make([]Term, 0)
+	outputs := make([]string, 0)
 	for _, line := range data {
 		parts := strings.Fields(line)
 		if len(parts) != 5 {
@@ -93,22 +87,25 @@ func part1(data []string) int {
 			return -1
 		}
 
-		term := Term{
-			name: parts[4],
-			A:    parts[0],
-			B:    parts[2],
-			Op:   operations[parts[1]],
+		if strings.HasPrefix(parts[4], "z") {
+			outputs = append(outputs, parts[4])
 		}
-		terms[parts[4]] = term
 
-		if strings.HasPrefix(term.name, "z") {
-			goals = append(goals, term)
+		// x01 AND x02 -> y02
+		// 0   1   2   3  4
+		expressions[parts[4]] = Expr{
+			Kind:   Str2Kind(parts[1]),
+			InputA: parts[0],
+			InputB: parts[2],
 		}
 	}
 
-	result := 0
-	for i, goal := range goals {
-		result |= (goal.Op(terms[goal.A].name, terms[goal.B].name)) << i
+	sort.Strings(outputs)
+
+	var result int
+	// iter through all output nodes and resolve them recursively
+	for i, node := range outputs {
+		result |= hack.Wormhole(Eval(node, expressions)) << i
 	}
 
 	return result
@@ -119,7 +116,7 @@ func part2(data []string) int {
 }
 
 func main() {
-	data := input.LoadString("input_example")
+	data := input.LoadString("input")
 	// data := input.LoadDefaultInt()
 	// data := input.LoadInt("input")
 	//data := input.LoadDefaultString()
