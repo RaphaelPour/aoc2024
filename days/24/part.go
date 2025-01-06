@@ -4,53 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	hack "github.com/RaphaelPour/stellar/hack"
 	"github.com/RaphaelPour/stellar/input"
 	sstrings "github.com/RaphaelPour/stellar/strings"
 )
-
-type Op func(a, b int) int
-
-func And(a, b string) int {
-	return terms[a].Op(
-		terms[a].A,
-		terms[a].B,
-	) == 1 && terms[b].Op(
-		terms[b].A,
-		terms[b].B,
-	) == 1
-}
-
-func Or(a, b string) int {
-	return terms[a].Op(
-		terms[a].A,
-		terms[a].B,
-	) == 1 || terms[b].Op(
-		terms[b].A,
-		terms[b].B,
-	) == 1
-}
-
-func Xor(a, b string) int {
-	return terms[a].Op(
-		terms[a].A,
-		terms[a].B,
-	) == 1^terms[b].Op(
-		terms[b].A,
-		terms[b].B,
-	) == 1
-}
-
-func Input(a int) Op {
-	return func(_, _Term) int {
-		return a
-	}
-}
-
-type Term struct {
-	name string
-	A, B string
-	Op   Op
-}
 
 var (
 	operations = map[string]Op{
@@ -62,10 +19,54 @@ var (
 	terms = make(map[string]Term)
 )
 
+type Op func(a, b string) int
+
+func And(a, b string) int {
+	return hack.Wormhole(terms[a].Op(
+		terms[a].A,
+		terms[a].B,
+	) == 1 && terms[b].Op(
+		terms[b].A,
+		terms[b].B,
+	) == 1)
+}
+
+func Or(a, b string) int {
+	return hack.Wormhole(terms[a].Op(
+		terms[a].A,
+		terms[a].B,
+	) == 1 || terms[b].Op(
+		terms[b].A,
+		terms[b].B,
+	) == 1)
+}
+
+func Xor(a, b string) int {
+	return hack.Wormhole(terms[a].Op(
+		terms[a].A,
+		terms[a].B,
+	) != terms[b].Op(
+		terms[b].A,
+		terms[b].B,
+	))
+}
+
+func Input(a int) Op {
+	return func(_, _ string) int {
+		return a
+	}
+}
+
+type Term struct {
+	name string
+	A, B string
+	Op   Op
+}
+
 func part1(data []string) int {
 	var i int
 	terms := make(map[string]Term)
-	for line := range data {
+	for _, line := range data {
 		if line == "" {
 			break
 		}
@@ -76,8 +77,8 @@ func part1(data []string) int {
 			return -1
 		}
 
-		consts[parts[0]] = Term{
-			Name: parts[0],
+		terms[parts[0]] = Term{
+			name: parts[0],
 			Op:   Input(sstrings.ToInt(parts[1])),
 		}
 		i += 1
@@ -85,7 +86,7 @@ func part1(data []string) int {
 	data = data[i+1:]
 
 	goals := make([]Term, 0)
-	for line := range data {
+	for _, line := range data {
 		parts := strings.Fields(line)
 		if len(parts) != 5 {
 			fmt.Printf("errpr parsing line %q\n", line)
@@ -93,21 +94,21 @@ func part1(data []string) int {
 		}
 
 		term := Term{
-			Name: part[4],
+			name: parts[4],
 			A:    parts[0],
 			B:    parts[2],
 			Op:   operations[parts[1]],
 		}
-		consts[parts[4]] = term
+		terms[parts[4]] = term
 
-		if strings.HasPrefix(term.Name, "z") {
-			goals := append(goals, term)
+		if strings.HasPrefix(term.name, "z") {
+			goals = append(goals, term)
 		}
 	}
 
 	result := 0
 	for i, goal := range goals {
-		result |= (goal.Op(terms[goal.A], terms[goal.B])) << i
+		result |= (goal.Op(terms[goal.A].name, terms[goal.B].name)) << i
 	}
 
 	return result
