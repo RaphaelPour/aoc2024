@@ -133,10 +133,44 @@ func Number(prefix string, expressions map[string]Expr) int {
 	return result
 }
 
+func Set(prefix string, i int, expressions map[string]Expr) {
+	keys := make([]string, 0)
+	for key := range expressions {
+		if strings.HasPrefix(key, prefix) {
+			keys = append(keys, key)
+		}
+	}
+
+	sort.Strings(keys)
+
+	for j, key := range keys {
+		e := expressions[key]
+		e.Value = (i == j)
+		expressions[key] = e
+	}
+}
+
 func part2(data []string) int {
-	expressions, _ := Parse(data)
-	expected := Number("x", expressions) + Number("y", expressions)
-	fmt.Println("expected:", expected)
+	expressions, outputs := Parse(data)
+
+	for i := 0; i < 44; i++ {
+		Set("x", i, expressions)
+		Set("y", i, expressions)
+
+		var result int
+		for i, node := range outputs {
+			result |= hack.Wormhole(Eval(node, expressions)) << i
+		}
+
+		if result != Number("x", expressions)+Number("y", expressions) {
+			fmt.Printf(
+				"found bad sum x=%d + y=%d = %d\n",
+				Number("x", expressions),
+				Number("y", expressions),
+				result,
+			)
+		}
+	}
 	return 0
 }
 
